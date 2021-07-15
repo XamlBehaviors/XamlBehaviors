@@ -59,6 +59,14 @@ namespace Avalonia.Xaml.Interactions.Core
             BindingProperty.Changed.Subscribe(e => OnValueChanged(e.Sender, e));
             ComparisonConditionProperty.Changed.Subscribe(e => OnValueChanged(e.Sender, e));
             ValueProperty.Changed.Subscribe(e => OnValueChanged(e.Sender, e));
+            ActionsProperty.Changed.Subscribe(e => 
+            {
+                OnValueChanged(e.Sender, e);
+                if (e.Sender.GetValue(ActionsProperty) is { })
+                    e.Sender.GetValue(ActionsProperty).CollectionChanged += (obj, args) => {
+                        foreach (var item in args.NewItems) (item as IAvaloniaObject).PropertyChanged += (obj2, arg2) => OnValueChanged(e.Sender, null);
+                    };
+            });
         }
 
         private static bool Compare(object? leftOperand, ComparisonConditionType operatorType, object? rightOperand)
@@ -159,6 +167,11 @@ namespace Avalonia.Xaml.Interactions.Core
                 ComparisonConditionType.GreaterThanOrEqual => comparison >= 0,
                 _ => false
             };
+        }
+
+        protected override void OnAttached()
+        {
+            OnValueChanged(this, null);
         }
 
         private static void OnValueChanged(IAvaloniaObject avaloniaObject, AvaloniaPropertyChangedEventArgs args)
